@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "392537566029",
+    "project_id": "fleetcontrol-ecdc1",
+    "storage_bucket": "fleetcontrol-ecdc1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:392537566029:android:0cd67c61673bc6677c6504",
+        "android_client_info": {
+          "package_name": "com.paulmsummitt.fleetcontrol"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBpz1c6OqLraDenM7EHZQwGQRhL_x_B38o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
