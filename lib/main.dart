@@ -163,10 +163,11 @@ class _MyHomePageState extends State<MyHomePage> {
                                         try {
                                           await FirebaseAuth.instance
                                               .signInWithEmailAndPassword(
-                                                email: _emailController.text,
-                                                password:
-                                                    _passwordController.text,
-                                              );
+                                            email: _emailController.text,
+                                            password:
+                                                _passwordController.text,
+                                          );
+                                          if (!mounted) return;
                                           Navigator.pushReplacement(
                                             context,
                                             MaterialPageRoute(
@@ -175,6 +176,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                             ),
                                           );
                                         } on FirebaseAuthException catch (e) {
+                                          if (!mounted) return;
                                           ScaffoldMessenger.of(
                                             context,
                                           ).showSnackBar(
@@ -185,9 +187,11 @@ class _MyHomePageState extends State<MyHomePage> {
                                             ),
                                           );
                                         } finally {
-                                          setState(() {
-                                            _isLoading = false;
-                                          });
+                                          if (mounted) {
+                                            setState(() {
+                                              _isLoading = false;
+                                            });
+                                          }
                                         }
                                       }
                                     },
@@ -232,6 +236,7 @@ class HomeScreen extends StatelessWidget {
             icon: const Icon(Icons.logout),
             onPressed: () async {
               await FirebaseAuth.instance.signOut();
+              if (!context.mounted) return;
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (context) => const MyHomePage()),
