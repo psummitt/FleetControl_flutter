@@ -18,7 +18,19 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
       ),
-      home: const MyHomePage(),
+      // Use StreamBuilder to check if user is already logged in
+      home: StreamBuilder<User?>(
+        stream: FirebaseAuth.instance.authStateChanges(),
+        builder: (context, snapshot) {
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          }
+          if (snapshot.hasData) {
+            return const HomeScreen();
+          }
+          return const MyHomePage();
+        },
+      ),
     );
   }
 }
@@ -35,6 +47,7 @@ class _MyHomePageState extends State<MyHomePage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _isLoading = false;
+  bool _isLogin = true; // State to toggle between Login and Sign Up
 
   @override
   void dispose() {
@@ -43,180 +56,111 @@ class _MyHomePageState extends State<MyHomePage> {
     super.dispose();
   }
 
+  Future<void> _submit() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => _isLoading = true);
+    try {
+      if (_isLogin) {
+        // Sign In logic
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+      } else {
+        // Sign Up logic
+        await FirebaseAuth.instance.createUserWithEmailAndPassword(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+      }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? 'Authentication failed')),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Row(
-          children: [
-            const Text('FleetControl'),
-            const SizedBox(width: 16),
-            TextButton(
-              onPressed: () {
-                Navigator.pushReplacement(
-                  context,
-                  MaterialPageRoute(builder: (context) => const MyHomePage()),
-                );
-              },
-              child: const Text(
-                'Home',
-                style: TextStyle(color: Colors.black, fontSize: 20),
-              ),
-            ),
-          ],
-        ),
-        centerTitle: false,
-        leading: const Icon(Icons.login),
-        actions: const [Icon(Icons.login)],
+        title: const Text('FleetControl'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Column(
-                  children: [
-                    Text(
-                      'Welcome to FleetControl!',
-                      style: Theme.of(context).textTheme.headlineLarge,
-                    ),
-                  ],
-                ),
-              ],
-            ),
-            const SizedBox(height: 20),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: <Widget>[
-                // Left Column with Truck Image
-                SizedBox(
-                  width: 400, // Constrain card width
-                  child: Card(
-                    elevation: 5,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Image.asset('assets/img/Truck_368x368.jpg'),
-                    ),
+        child: SingleChildScrollView(
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Left Column with Truck Image
+              SizedBox(
+                width: 400,
+                child: Card(
+                  elevation: 5,
+                  child: Padding(
+                    padding: const EdgeInsets.all(16.0),
+                    child: Image.asset('assets/img/Truck_368x368.jpg'),
                   ),
                 ),
-                const SizedBox(width: 20), // Spacer
-                // Right Column with Sign-in Form
-                SizedBox(
-                  width: 400, // Constrain card width
-                  child: Card(
-                    elevation: 5,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Form(
-                        key: _formKey,
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: <Widget>[
-                            const Text(
-                              'Sign In',
-                              style: TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                            TextFormField(
-                              controller: _emailController,
-                              decoration: const InputDecoration(
-                                labelText: 'Email',
-                                border: OutlineInputBorder(),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter your email';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 20),
-                            TextFormField(
-                              controller: _passwordController,
-                              obscureText: true,
-                              decoration: const InputDecoration(
-                                labelText: 'Password',
-                                border: OutlineInputBorder(),
-                              ),
-                              validator: (value) {
-                                if (value == null || value.isEmpty) {
-                                  return 'Please enter your password';
-                                }
-                                return null;
-                              },
-                            ),
-                            const SizedBox(height: 20),
+              ),
+              const SizedBox(width: 20),
+              // Right Column with Sign-in/Sign-up Form
+              SizedBox(
+                width: 400,
+                child: Card(
+                  elevation: 5,
+                  child: Padding(
+                    padding: const EdgeInsets.all(24.0),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _isLogin ? 'Sign In' : 'Create Account',
+                            style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                          ),
+                          const SizedBox(height: 20),
+                          TextFormField(
+                            controller: _emailController,
+                            decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
+                            validator: (val) => val!.isEmpty ? 'Enter email' : null,
+                          ),
+                          const SizedBox(height: 20),
+                          TextFormField(
+                            controller: _passwordController,
+                            obscureText: true,
+                            decoration: const InputDecoration(labelText: 'Password', border: OutlineInputBorder()),
+                            validator: (val) => val!.length < 6 ? 'Password too short' : null,
+                          ),
+                          const SizedBox(height: 24),
+                          if (_isLoading)
+                            const CircularProgressIndicator()
+                          else ...[
                             ElevatedButton(
-                              onPressed: _isLoading
-                                  ? null
-                                  : () async {
-                                      if (_formKey.currentState!.validate()) {
-                                        setState(() {
-                                          _isLoading = true;
-                                        });
-                                        try {
-                                          await FirebaseAuth.instance
-                                              .signInWithEmailAndPassword(
-                                            email: _emailController.text,
-                                            password:
-                                                _passwordController.text,
-                                          );
-                                          if (!mounted) return;
-                                          Navigator.pushReplacement(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (context) =>
-                                                  const HomeScreen(),
-                                            ),
-                                          );
-                                        } on FirebaseAuthException catch (e) {
-                                          if (!mounted) return;
-                                          ScaffoldMessenger.of(
-                                            context,
-                                          ).showSnackBar(
-                                            SnackBar(
-                                              content: Text(
-                                                e.message ?? 'Sign-in failed',
-                                              ),
-                                            ),
-                                          );
-                                        } finally {
-                                          if (mounted) {
-                                            setState(() {
-                                              _isLoading = false;
-                                            });
-                                          }
-                                        }
-                                      }
-                                    },
-                              child: _isLoading
-                                  ? const CircularProgressIndicator(
-                                      color: Colors.white,
-                                    )
-                                  : const Text('Sign In'),
+                              onPressed: _submit,
+                              style: ElevatedButton.styleFrom(minimumSize: const Size.fromHeight(50)),
+                              child: Text(_isLogin ? 'Login' : 'Sign Up'),
+                            ),
+                            TextButton(
+                              onPressed: () => setState(() => _isLogin = !_isLogin),
+                              child: Text(_isLogin
+                                  ? 'Need an account? Register'
+                                  : 'Already have an account? Login'),
                             ),
                           ],
-                        ),
+                        ],
                       ),
                     ),
                   ),
                 ),
-              ],
-            ),
-          ],
-        ),
-      ),
-      bottomNavigationBar: BottomAppBar(
-        child: Container(
-          alignment: Alignment.centerLeft,
-          padding: const EdgeInsets.symmetric(horizontal: 16.0),
-          child: const Text('© 2025 Paul M. Summitt All Rights Reserved.'),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -230,18 +174,11 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Home'),
+        title: const Text('FleetControl Dashboard'),
         actions: [
           IconButton(
             icon: const Icon(Icons.logout),
-            onPressed: () async {
-              await FirebaseAuth.instance.signOut();
-              if (!context.mounted) return;
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (context) => const MyHomePage()),
-              );
-            },
+            onPressed: () => FirebaseAuth.instance.signOut(),
           ),
         ],
       ),
