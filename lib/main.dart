@@ -1,10 +1,13 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
   runApp(const MyApp());
 }
 
@@ -93,24 +96,30 @@ class _MyHomePageState extends State<MyHomePage> {
       ),
       body: Center(
         child: SingleChildScrollView(
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.center,
+          padding: const EdgeInsets.all(24.0),
+          child: Wrap(
+            alignment: WrapAlignment.center,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: 40,
+            runSpacing: 20,
             children: [
-              // Left Column with Truck Image
-              SizedBox(
-                width: 400,
+              // Column with Truck Image
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 400),
                 child: Card(
                   elevation: 5,
                   child: Padding(
                     padding: const EdgeInsets.all(16.0),
-                    child: Image.asset('assets/img/Truck_368x368.jpg'),
+                    child: Image.asset(
+                      'assets/img/Truck_368x368.jpg',
+                      fit: BoxFit.contain,
+                    ),
                   ),
                 ),
               ),
-              const SizedBox(width: 20),
-              // Right Column with Sign-in/Sign-up Form
-              SizedBox(
-                width: 400,
+              // Column with Sign-in/Sign-up Form
+              ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 400),
                 child: Card(
                   elevation: 5,
                   child: Padding(
@@ -128,14 +137,14 @@ class _MyHomePageState extends State<MyHomePage> {
                           TextFormField(
                             controller: _emailController,
                             decoration: const InputDecoration(labelText: 'Email', border: OutlineInputBorder()),
-                            validator: (val) => val!.isEmpty ? 'Enter email' : null,
+                            validator: (val) => val == null || val.isEmpty ? 'Enter email' : null,
                           ),
                           const SizedBox(height: 20),
                           TextFormField(
                             controller: _passwordController,
                             obscureText: true,
                             decoration: const InputDecoration(labelText: 'Password', border: OutlineInputBorder()),
-                            validator: (val) => val!.length < 6 ? 'Password too short' : null,
+                            validator: (val) => val == null || val.length < 6 ? 'Password too short' : null,
                           ),
                           const SizedBox(height: 24),
                           if (_isLoading)
