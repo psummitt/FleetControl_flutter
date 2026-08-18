@@ -17,6 +17,7 @@ class DashboardScreen extends StatefulWidget {
 
 class _DashboardScreenState extends State<DashboardScreen> {
   String? _companyId;
+  bool _isError = false;
   final _vehicleService = VehicleService();
   final _driverService = DriverService();
   final _maintenanceService = MaintenanceService();
@@ -30,14 +31,54 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _loadCompanyId() async {
-    final companyId = await _authService.getUserCompanyId();
-    if (mounted) {
-      setState(() => _companyId = companyId);
+    try {
+      final companyId = await _authService.getUserCompanyId().timeout(
+        const Duration(seconds: 10),
+        onTimeout: () => throw Exception('Timed out loading profile'),
+      );
+      if (mounted) {
+        setState(() {
+          _companyId = companyId;
+          _isError = companyId == null;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() => _isError = true);
+      }
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_isError) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Icon(Icons.error_outline, size: 48, color: Colors.red),
+            const SizedBox(height: 16),
+            const Text('Could not load user profile.'),
+            const SizedBox(height: 8),
+            ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  _isError = false;
+                  _companyId = null;
+                });
+                _loadCompanyId();
+              },
+              child: const Text('Retry'),
+            ),
+            TextButton(
+              onPressed: () => _authService.signOut(),
+              child: const Text('Sign Out'),
+            ),
+          ],
+        ),
+      );
+    }
+
     if (_companyId == null) {
       return const Center(child: CircularProgressIndicator());
     }
