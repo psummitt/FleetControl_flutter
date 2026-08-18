@@ -8,7 +8,7 @@ void main() async {
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
-  runApp(const FleetControlApp());
+runApp(const FleetControlApp());
 }
 
 class FleetControlApp extends StatelessWidget {
