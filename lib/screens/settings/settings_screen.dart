@@ -166,7 +166,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     try {
                       await FirebaseAuth.instance
                           .sendPasswordResetEmail(email: user!.email!);
-                      if (mounted) {
+                      if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
                             content: Text(
@@ -175,7 +175,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         );
                       }
                     } catch (e) {
-                      if (mounted) {
+                      if (context.mounted) {
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(content: Text('Error: ${e.toString()}')),
                         );
